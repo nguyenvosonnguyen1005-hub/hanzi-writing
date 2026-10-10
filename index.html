@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Luyện viết Hán tự bằng bút lông</title>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#f4efe6; --card:#fffdf8; --text:#2a2622; --muted:#7a7168; --line:#e2d9c8;
+  --accent:#b8322a; --ok:#2f7d4f; --warn:#b7791f; --paper:#fbf6ea; --ink:#16130f; --guide:#d9b8b0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1b1815; --card:#25211d; --text:#efe8dc; --muted:#a39a8d; --line:#3b352e;
+    --accent:#e0594f; --ok:#5fbf86; --warn:#e0b04f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1b1815; --card:#25211d; --text:#efe8dc; --muted:#a39a8d; --line:#3b352e;
+  --accent:#e0594f; --ok:#5fbf86; --warn:#e0b04f;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;min-height:100vh;padding:16px 12px 40px}
+.app{max-width:480px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+h1{font-size:18px;margin:0;letter-spacing:.2px}
+h1 span{color:var(--accent)}
+.stats{font-size:13px;color:var(--muted);text-align:right;line-height:1.3}
+.stats b{color:var(--text)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.opts{display:flex;gap:10px;margin-bottom:12px}
+.opt{flex:1;display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.opt select{width:100%;padding:10px 12px;font-size:15px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;font-family:inherit}
+.prompt{text-align:center;padding:4px 0 12px}
+.emoji{font-size:76px;line-height:1.1}
+.word{font-size:30px;font-weight:700;margin-top:2px}
+.sub{font-size:13px;color:var(--muted);margin-top:2px;min-height:18px}
+.sub:empty{display:none}
+.pad{position:relative;width:100%;max-width:420px;aspect-ratio:1/1;margin:0 auto;background:var(--paper);border:2px solid var(--accent);border-radius:8px;overflow:hidden;touch-action:none}
+.pad > svg,.pad canvas,.pad .ref{position:absolute;inset:0;width:100%;height:100%}
+.pad canvas{touch-action:none;cursor:crosshair}
+.ref{display:flex;align-items:center;justify-content:center;font-family:"LXGW WenKai TC","Kaiti SC","KaiTi","STKaiti","Noto Sans SC",serif;font-weight:400;color:#b8322a;opacity:0;pointer-events:none;transition:opacity .2s;font-size:min(72vw,340px);line-height:1}
+.ref.hint{opacity:.14}
+.ref.reveal{opacity:.5}
+.status{margin:12px 0 4px;min-height:56px;text-align:center}
+.status .t{font-weight:700;font-size:16px}
+.status .t .py{font-size:15px;font-weight:600;margin-left:4px}
+.status .d{font-size:13px;color:var(--muted);margin-top:3px}
+.ok .t{color:var(--ok)} .near .t{color:var(--warn)} .bad .t{color:var(--accent)}
+.cands{display:flex;justify-content:center;gap:8px;margin-top:6px}
+.cand{border:1px solid var(--line);border-radius:10px;padding:2px 10px;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.cand b{font-size:22px;color:var(--text);font-family:"LXGW WenKai TC","Kaiti SC","KaiTi","STKaiti","Noto Sans SC",serif;font-weight:400}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.btns button{padding:11px 6px;font-size:14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+.btns button:active{transform:scale(.97)}
+.speak{position:absolute;right:8px;bottom:8px;z-index:3;width:31px;height:31px;border-radius:50%;border:1px solid var(--guide);background:rgba(255,255,255,.85);color:#333;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.speak:active{transform:scale(.97)}
+.btns #dice{grid-column:1/-1;font-size:15px}
+.btns #dice.next{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.hans{font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Heiti SC",sans-serif;font-weight:500}
+.han{font-family:"LXGW WenKai TC","Kaiti SC","KaiTi","STKaiti","Noto Sans SC",serif;font-weight:400}
+.note{font-size:12px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.5}
+.loading{opacity:.5;pointer-events:none}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.2/dist/hanzi-writer.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 id="ttl">🖌️ Luyện viết <span>Hán tự</span></h1>
+  </header>
+
+  <div class="card" id="card">
+    <div class="opts">
+      <label class="opt"><span id="lvLabel">Trình độ</span>
+        <select id="lv">
+          <option value="1">HSK 1</option><option value="2">HSK 2</option><option value="3">HSK 3</option>
+          <option value="4">HSK 4</option><option value="5">HSK 5</option><option value="6">HSK 6</option>
+        </select>
+      </label>
+      <label class="opt"><span id="lgLabel">Ngôn ngữ</span>
+        <select id="lg">
+          <option value="vi">Tiếng Việt</option><option value="en">English</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="prompt">
+      <div class="emoji" id="emoji"></div>
+      <div class="word" id="word"></div>
+      <div class="sub" id="sub"></div>
+    </div>
+
+    <div class="pad" id="pad">
+      <svg id="guide" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <g stroke="var(--guide)" stroke-width=".5" stroke-dasharray="2 2" fill="none">
+          <line x1="0" y1="0" x2="100" y2="100"/><line x1="100" y1="0" x2="0" y2="100"/>
+          <line x1="50" y1="0" x2="50" y2="100"/><line x1="0" y1="50" x2="100" y2="50"/>
+        </g>
+      </svg>
+      <div class="ref" id="ref" lang="zh-Hans"></div>
+      <canvas id="cv"></canvas>
+      <button class="speak" id="speak" type="button" aria-label="Nghe phát âm">🔊</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="btns">
+      <button id="undo">↶ Hoàn tác nét</button>
+      <button id="clear">🗑 Xóa hết</button>
+      <button id="reveal">👁 Xem đáp án</button>
+      <button id="dice">🎲 Từ khác</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Dữ liệu: cấp HSK | phồn thể | giản thể | pinyin | bộ thủ | tên bộ | tiếng Việt | tiếng Anh | hình
+const RAW = `1|一|一|yī|一|nhất|một|one|1️⃣
+1|二|二|èr|二|nhị|hai|two|2️⃣
+1|三|三|sān|一|nhất|ba|three|3️⃣
+1|四|四|sì|囗|vi|bốn|four|4️⃣
+1|五|五|wǔ|二|nhị|năm|five|5️⃣
+1|六|六|liù|八|bát|sáu|six|6️⃣
+1|七|七|qī|一|nhất|bảy|seven|7️⃣
+1|八|八|bā|八|bát|tám|eight|8️⃣
+1|九|九|jiǔ|乙|ất|chín|nine|9️⃣
+1|十|十|shí|十|thập|mười|ten|🔟
+1|大|大|dà|大|đại|to, lớn|big|🐘
+1|小|小|xiǎo|小|tiểu|nhỏ|small|🐜
+1|人|人|rén|人|nhân|người|person|🧑
+1|我|我|wǒ|戈|qua|tôi|I, me|🙋
+1|月|月|yuè|月|nguyệt|mặt trăng, tháng|moon, month|🌙
+1|水|水|shuǐ|水|thủy|nước|water|💧
+1|家|家|jiā|宀|miên|nhà|home|🏠
+1|吃|吃|chī|口|khẩu|ăn|to eat|🍽️
+1|喝|喝|hē|口|khẩu|uống|to drink|🥤
+1|看|看|kàn|目|mục|nhìn, xem|to look, to watch|👀
+1|說|说|shuō|讠|ngôn|nói|to speak|🗣️
+1|愛|爱|ài|心|tâm|yêu|to love|❤️
+1|好|好|hǎo|女|nữ|tốt|good|👍
+1|上|上|shàng|一|nhất|phía trên|up, above|⬆️
+1|下|下|xià|一|nhất|phía dưới|down, below|⬇️
+1|中|中|zhōng|丨|cổn|ở giữa|middle|🎯
+1|狗|狗|gǒu|犭|khuyển|con chó|dog|🐶
+1|書|书|shū|曰|viết|quyển sách|book|📖
+1|茶|茶|chá|艹|thảo|trà|tea|🍵
+1|錢|钱|qián|钅|kim|tiền|money|💰
+1|買|买|mǎi|贝|bối|mua|to buy|🛒
+1|寫|写|xiě|宀|miên|viết|to write|✍️
+1|去|去|qù|厶|khư|đi|to go|🚶
+1|來|来|lái|人|nhân|đến|to come|👋
+2|白|白|bái|白|bạch|màu trắng|white|⚪
+2|黑|黑|hēi|黑|hắc|màu đen|black|⚫
+2|紅|红|hóng|纟|mịch|màu đỏ|red|🔴
+2|高|高|gāo|高|cao|cao|tall, high|🗼
+2|門|门|mén|门|môn|cái cửa|door|🚪
+2|魚|鱼|yú|鱼|ngư|con cá|fish|🐟
+2|賣|卖|mài|贝|bối|bán|to sell|🏷️
+2|男|男|nán|田|điền|nam, đàn ông|male|👨
+2|女|女|nǚ|女|nữ|nữ, phụ nữ|female|👩
+2|雪|雪|xuě|雨|vũ|tuyết|snow|❄️
+2|笑|笑|xiào|竹|trúc|cười|to laugh|😄
+2|新|新|xīn|斤|cân|mới|new|🆕
+2|遠|远|yuǎn|辶|sước|xa|far|🛣️
+2|慢|慢|màn|忄|tâm|chậm|slow|🐌
+2|忙|忙|máng|忄|tâm|bận|busy|🏃
+2|走|走|zǒu|走|tẩu|đi bộ|to walk|🥾
+2|站|站|zhàn|立|lập|đứng|to stand|🧍
+2|問|问|wèn|口|khẩu|hỏi|to ask|❓
+2|洗|洗|xǐ|氵|thủy|rửa|to wash|🧼
+2|日|日|rì|日|nhật|mặt trời, ngày|sun, day|☀️
+2|累|累|lèi|纟|mịch|mệt|tired|😩
+2|找|找|zhǎo|扌|thủ|tìm|to look for|🔍
+3|春|春|chūn|日|nhật|mùa xuân|spring|🌷
+3|夏|夏|xià|夊|tri|mùa hè|summer|🏖️
+3|秋|秋|qiū|禾|hòa|mùa thu|autumn|🍂
+3|冬|冬|dōng|冫|băng|mùa đông|winter|⛄
+3|東|东|dōng|木|mộc|phía đông|east|🌅
+3|西|西|xī|西|á|phía tây|west|🌇
+3|畫|画|huà|田|điền|vẽ, bức tranh|to draw, painting|🎨
+3|馬|马|mǎ|马|mã|con ngựa|horse|🐴
+3|鳥|鸟|niǎo|鸟|điểu|con chim|bird|🐦
+3|米|米|mǐ|米|mễ|hạt gạo|rice|🍚
+3|口|口|kǒu|口|khẩu|miệng|mouth|👄
+3|腳|脚|jiǎo|月|nhục|bàn chân|foot|🦶
+3|樹|树|shù|木|mộc|cái cây|tree|🌳
+3|傘|伞|sǎn|人|nhân|cái ô, dù|umbrella|☂️
+3|碗|碗|wǎn|石|thạch|cái bát|bowl|🥣
+3|甜|甜|tián|甘|cam|ngọt|sweet|🍬
+3|渴|渴|kě|氵|thủy|khát nước|thirsty|🥵
+3|哭|哭|kū|口|khẩu|khóc|to cry|😭
+3|黃|黄|huáng|黄|hoàng|màu vàng|yellow|🟡
+3|草|草|cǎo|艹|thảo|cỏ|grass|🌱
+3|花|花|huā|艹|thảo|bông hoa|flower|🌸
+3|角|角|jiǎo|角|giác|góc, sừng|corner, horn|📐
+3|燈|灯|dēng|火|hỏa|cái đèn|lamp|💡
+4|酸|酸|suān|酉|dậu|chua|sour|🍋
+4|苦|苦|kǔ|艹|thảo|đắng, khổ|bitter|☕
+4|辣|辣|là|辛|tân|cay|spicy|🌶️
+4|笨|笨|bèn|竹|trúc|ngốc, vụng|stupid, clumsy|🤪
+4|棒|棒|bàng|木|mộc|giỏi, tuyệt|great|👏
+4|厚|厚|hòu|厂|hán|dày|thick|📚
+4|扔|扔|rēng|扌|thủ|ném, vứt|to throw|🗑️
+4|碰|碰|pèng|石|thạch|chạm, đụng|to bump into|💥
+4|吹|吹|chuī|口|khẩu|thổi|to blow|💨
+4|熟|熟|shú|灬|hỏa|chín, quen thuộc|ripe, familiar|🍎
+4|抱|抱|bào|扌|thủ|ôm|to hug|🤗
+4|夢|梦|mèng|夕|tịch|giấc mơ|dream|💭
+4|輕|轻|qīng|车|xa|nhẹ|light|🪶
+4|輸|输|shū|车|xa|thua|to lose|😞
+5|猜|猜|cāi|犭|khuyển|đoán|to guess|🤔
+5|偷|偷|tōu|亻|nhân|ăn trộm|to steal|🦹
+5|躺|躺|tǎng|身|thân|nằm|to lie down|🛌
+5|拍|拍|pāi|扌|thủ|vỗ, chụp|to clap, to snap|📸
+5|摸|摸|mō|扌|thủ|sờ, chạm|to touch|🖐️
+5|靠|靠|kào|非|phi|dựa vào|to lean on|🧱
+5|滑|滑|huá|氵|thủy|trơn, trượt|slippery, to slide|⛸️
+5|挑|挑|tiāo|扌|thủ|chọn|to choose|👆
+5|搶|抢|qiǎng|扌|thủ|cướp, giành|to grab|🏴‍☠️
+5|罵|骂|mà|罒|võng|chửi mắng|to scold|🤬
+5|燒|烧|shāo|火|hỏa|đốt, cháy|to burn|🔥
+5|敲|敲|qiāo|攵|phộc|gõ|to knock|🔨
+6|咬|咬|yǎo|口|khẩu|cắn|to bite|🦷
+6|吞|吞|tūn|口|khẩu|nuốt|to swallow|😮
+6|吻|吻|wěn|口|khẩu|hôn|to kiss|💋
+6|挖|挖|wā|扌|thủ|đào|to dig|⛏️
+6|抖|抖|dǒu|扌|thủ|run rẩy|to tremble|🥶
+6|吼|吼|hǒu|口|khẩu|gầm, hét|to roar|🦁
+6|漏|漏|lòu|氵|thủy|rò rỉ|to leak|🚰
+6|骨|骨|gǔ|骨|cốt|xương|bone|🦴
+6|搖|摇|yáo|扌|thủ|lắc, rung|to shake|🔔
+6|嘆|叹|tàn|口|khẩu|thở dài|to sigh|😮‍💨
+6|拋|抛|pāo|扌|thủ|ném, tung|to toss|🏀
+1|什么|什么|shénme|-|-|gì, cái gì|what|🤷
+1|喜欢|喜欢|xǐhuan|-|-|thích|to like|😍
+1|谢谢|谢谢|xièxie|-|-|cảm ơn|thank you|🙏
+1|再见|再见|zàijiàn|-|-|tạm biệt|goodbye|🫡
+1|你好|你好|nǐ hǎo|-|-|xin chào|hello|👋
+1|学生|学生|xuésheng|-|-|học sinh|student|🧑‍🎓
+1|老师|老师|lǎoshī|-|-|giáo viên|teacher|👩‍🏫
+1|朋友|朋友|péngyou|-|-|bạn bè|friend|🧑‍🤝‍🧑
+1|中国|中国|Zhōngguó|-|-|Trung Quốc|China|🏯
+1|汉语|汉语|Hànyǔ|-|-|tiếng Trung|Chinese language|🀄
+1|爸爸|爸爸|bàba|-|-|bố|dad|👨‍👦
+1|妈妈|妈妈|māma|-|-|mẹ|mom|👩‍👦
+1|今天|今天|jīntiān|-|-|hôm nay|today|📅
+1|明天|明天|míngtiān|-|-|ngày mai|tomorrow|🗓️
+1|昨天|昨天|zuótiān|-|-|hôm qua|yesterday|⏪
+1|现在|现在|xiànzài|-|-|bây giờ|now|⏰
+1|上午|上午|shàngwǔ|-|-|buổi sáng|morning|🌞
+1|下午|下午|xiàwǔ|-|-|buổi chiều|afternoon|🌤️
+1|中午|中午|zhōngwǔ|-|-|buổi trưa|noon|🕛
+1|我们|我们|wǒmen|-|-|chúng tôi, chúng ta|we, us|👥
+1|电话|电话|diànhuà|-|-|điện thoại|telephone|📞
+1|电脑|电脑|diànnǎo|-|-|máy tính|computer|💻
+1|电视|电视|diànshì|-|-|ti vi|television|📺
+1|电影|电影|diànyǐng|-|-|phim|movie|🎬
+1|苹果|苹果|píngguǒ|-|-|quả táo|apple|🍎
+1|水果|水果|shuǐguǒ|-|-|trái cây|fruit|🍉
+1|米饭|米饭|mǐfàn|-|-|cơm|cooked rice|🍛
+1|学校|学校|xuéxiào|-|-|trường học|school|🏫
+1|医院|医院|yīyuàn|-|-|bệnh viện|hospital|🏥
+1|医生|医生|yīshēng|-|-|bác sĩ|doctor|👨‍⚕️
+1|商店|商店|shāngdiàn|-|-|cửa hàng|shop|🏪
+1|飞机|飞机|fēijī|-|-|máy bay|airplane|✈️
+1|衣服|衣服|yīfu|-|-|quần áo|clothes|👕
+1|椅子|椅子|yǐzi|-|-|cái ghế|chair|🪑
+1|桌子|桌子|zhuōzi|-|-|cái bàn|table|🪵
+1|天气|天气|tiānqì|-|-|thời tiết|weather|⛅
+1|下雨|下雨|xiàyǔ|-|-|trời mưa|to rain|🌧️
+1|睡觉|睡觉|shuìjiào|-|-|ngủ|to sleep|😴
+1|高兴|高兴|gāoxìng|-|-|vui vẻ|happy|😊
+1|漂亮|漂亮|piàoliang|-|-|đẹp|beautiful|🌺
+1|名字|名字|míngzi|-|-|tên|name|📛
+1|工作|工作|gōngzuò|-|-|công việc|work, job|💼
+1|认识|认识|rènshi|-|-|quen biết|to know (someone)|🤝
+1|同学|同学|tóngxué|-|-|bạn học|classmate|🎒
+1|先生|先生|xiānsheng|-|-|ông, ngài|Mr., sir|🤵
+1|小姐|小姐|xiǎojiě|-|-|cô, tiểu thư|Miss|💁‍♀️
+1|星期|星期|xīngqī|-|-|tuần|week|📆
+1|儿子|儿子|érzi|-|-|con trai|son|👦
+1|分钟|分钟|fēnzhōng|-|-|phút|minute|⏱️
+1|多少|多少|duōshao|-|-|bao nhiêu|how many|🔢`;
+// Bộ thủ của các chữ chỉ xuất hiện trong từ ghép: chữ | bộ thủ | tên bộ
+const CHARX = `什|亻|nhân
+么|丿|phiệt
+喜|口|khẩu
+欢|欠|khiếm
+谢|讠|ngôn
+再|冂|quynh
+见|见|kiến
+你|亻|nhân
+学|子|tử
+生|生|sinh
+老|老|lão
+师|巾|cân
+朋|月|nguyệt
+友|又|hựu
+国|囗|vi
+汉|氵|thủy
+语|讠|ngôn
+爸|父|phụ
+妈|女|nữ
+今|人|nhân
+天|大|đại
+明|日|nhật
+昨|日|nhật
+现|王|ngọc
+在|土|thổ
+午|十|thập
+们|亻|nhân
+电|田|điền
+话|讠|ngôn
+脑|月|nhục
+视|见|kiến
+影|彡|sam
+苹|艹|thảo
+果|木|mộc
+饭|饣|thực
+校|木|mộc
+医|匚|phương
+院|阝|phụ
+商|口|khẩu
+店|广|nghiễm
+飞|飞|phi
+机|木|mộc
+衣|衣|y
+服|月|nguyệt
+椅|木|mộc
+子|子|tử
+桌|木|mộc
+气|气|khí
+睡|目|mục
+觉|见|kiến
+兴|八|bát
+漂|氵|thủy
+亮|亠|đầu
+名|口|khẩu
+字|子|tử
+工|工|công
+作|亻|nhân
+认|讠|ngôn
+识|讠|ngôn
+同|口|khẩu
+先|儿|nhân
+姐|女|nữ
+星|日|nhật
+期|月|nguyệt
+儿|儿|nhân
+分|刀|đao
+钟|钅|kim
+多|夕|tịch
+雨|雨|vũ
+少|小|tiểu`;
+const WORDS = RAW.split("\n").map(l=>{ const a=l.split("|"); return {lv:+a[0],t:a[1],s:a[2],py:a[3],rad:a[4],rn:a[5],vi:a[6],en:a[7],em:a[8]}; });
+const CHARINFO = {};
+WORDS.forEach(w=>{ if([...w.s].length===1) CHARINFO[w.s] = [w.rad, w.rn]; });
+CHARX.split("\n").forEach(l=>{ const a=l.split("|"); CHARINFO[a[0]] = [a[1], a[2]]; });
+const CHARSET = [...new Set(WORDS.flatMap(w=>[...w.s]))];
+const CHARS = CHARSET.join("");
+const SCHARS = [...new Set([...CHARS, ...Object.values(CHARINFO).flatMap(x=>[...x[0]])])].join("");
+const FONT = '"LXGW WenKai TC","Kaiti SC","KaiTi","STKaiti","Noto Sans SC",serif';
+const G = 64, FIT = 58;
+
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const pad = $("pad");
+let strokes = [], cur = null, W = 1, dpr = 1;
+let level = 1, lang = "vi", deck = [], idx = null, solved = false, stats = {sc:0,tot:0,stk:0};
+let timer = null, ready = false, templates = [], revealedThisWord = false, autoTimer = null;
+try{ const sv = JSON.parse(localStorage.getItem("hz-prefs")||"null"); if(sv){ if(sv.level>=1&&sv.level<=6) level=sv.level; if(sv.lang==="en"||sv.lang==="vi") lang=sv.lang; } }catch(e){}
+function savePrefs(){ try{ localStorage.setItem("hz-prefs", JSON.stringify({level,lang})); }catch(e){} }
+
+/* ---------- Ngôn ngữ giao diện ---------- */
+const UI = {
+ vi:{title:'🖌️ Luyện viết <span>Hán tự</span>', doc:'Luyện viết Hán tự bằng bút lông', level:'Trình độ', language:'Ngôn ngữ',
+     undo:'↶ Hoàn tác nét', clear:'🗑 Xóa hết', reveal:'👁 Xem đáp án', dice:'🎲 Từ khác', next:'Từ tiếp theo →', listen:'Nghe', twochars:'Viết 2 chữ: chữ 1 bên trái, chữ 2 bên phải', more:'Viết tiếp chữ còn lại nhé.', cellnear:'Chữ thứ {k} gần đúng, kiểm tra lại số nét và vị trí các nét.', cellbad:'Chữ thứ {k} chưa đúng. Máy nhận ra giống: ', nospeech1:'Không phát được âm thanh', nospeech2:'Thiết bị hoặc trình duyệt chưa có giọng đọc tiếng Trung.', radical:'Bộ thủ', cleared:'Đã xóa. Hãy viết lại nhé.',
+     small1:'Chữ hơi nhỏ', small2:'Hãy viết to hơn, gần đầy ô nhé.', ok:'✅ Chính xác!', near1:'🔶 Gần đúng rồi!',
+     near2:'Kiểm tra lại số nét và vị trí các nét, rồi viết lại.', bad1:'❌ Chưa đúng',
+     bad2a:'Máy đang nhận ra giống: ', bad2b:'. Thử viết lại hoặc bấm “Xem đáp án”.'},
+ en:{title:'🖌️ Practice writing <span>Hanzi</span>', doc:'Practice writing Chinese characters with a brush', level:'Level', language:'Language',
+     undo:'↶ Undo stroke', clear:'🗑 Clear', reveal:'👁 Show answer', dice:'🎲 Another word', next:'Next word →', listen:'Listen', twochars:'Write 2 characters: first on the left, second on the right', more:'Now write the other character.', cellnear:'Character {k} is close — check its strokes again.', cellbad:'Character {k} is not right. It looks most like: ', nospeech1:"Can't play audio", nospeech2:'Your device or browser has no Chinese voice installed.', radical:'Radical', cleared:'Cleared. Try again.',
+     small1:'Writing is too small', small2:'Please write bigger, almost filling the box.', ok:'✅ Correct!', near1:'🔶 Almost there!',
+     near2:'Check the number of strokes and where each stroke goes, then try again.', bad1:'❌ Not quite',
+     bad2a:'It looks most like: ', bad2b:'. Try again or tap “Show answer”.'}
+};
+const RADEN = {"nhất":"one","nhị":"two","vi":"enclosure","bát":"eight","ất":"second","thập":"ten","đại":"big","tiểu":"small","nhân":"person","nguyệt":"moon","thủy":"water","miên":"roof","khẩu":"mouth","mục":"eye","ngôn":"speech","tâm":"heart","nữ":"woman","cổn":"line","khuyển":"dog","viết":"say","thảo":"grass","kim":"metal","bối":"shell","khư":"private","bạch":"white","hắc":"black","mịch":"silk","cao":"tall","môn":"gate","ngư":"fish","điền":"field","vũ":"rain","trúc":"bamboo","cân":"axe","sước":"walk","tẩu":"run","lập":"stand","nhật":"sun","thủ":"hand","tri":"go slowly","hòa":"grain","băng":"ice","mộc":"wood","á":"cover","mã":"horse","điểu":"bird","mễ":"rice","nhục":"meat","thạch":"stone","cam":"sweet","hoàng":"yellow","giác":"horn","hỏa":"fire","dậu":"wine","tân":"bitter","hán":"cliff","tịch":"evening","xa":"cart","thân":"body","phi":"not","võng":"net","phộc":"tap","cốt":"bone","qua":"spear"};
+const RADCH = {"丿":"slash","欠":"lack","冂":"down box","见":"see","生":"life","老":"old","巾":"cloth","又":"again","父":"father","彡":"hair","饣":"eat","匚":"box","阝":"mound","广":"shelter","飞":"fly","衣":"clothes","气":"steam","亠":"lid","工":"work","儿":"legs","子":"child","王":"jade","土":"earth"};
+/* ---------- Phát âm (giọng đọc tiếng Trung có sẵn trên thiết bị) ---------- */
+function zhVoice(){
+  if(!("speechSynthesis" in window)) return null;
+  const vs = speechSynthesis.getVoices() || [];
+  return vs.find(v=>/^zh[-_]CN/i.test(v.lang)) || vs.find(v=>/^zh/i.test(v.lang)) || null;
+}
+function speak(text, quiet){
+  const fail = ()=>{ if(!quiet) setStatus("bad", tr("nospeech1"), tr("nospeech2")); };
+  if(!("speechSynthesis" in window) || typeof SpeechSynthesisUtterance === "undefined"){ fail(); return; }
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "zh-CN"; u.rate = 0.8;
+    const v = zhVoice(); if(v) u.voice = v;
+    u.onerror = ()=>{ if(!zhVoice()) fail(); };
+    speechSynthesis.speak(u);
+  }catch(e){ fail(); }
+}
+if("speechSynthesis" in window){ try{ speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = ()=>{}; }catch(e){} }
+function updateDice(){ const b=$("dice"); b.textContent = solved ? tr("next") : tr("dice"); b.classList.toggle("next", solved); }
+function tr(k){ return UI[lang][k]; }
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.title = tr("doc");
+  $("ttl").innerHTML = tr("title");
+  $("lvLabel").textContent = tr("level"); $("lgLabel").textContent = tr("language");
+  $("undo").textContent = tr("undo"); $("clear").textContent = tr("clear"); $("reveal").textContent = tr("reveal"); $("speak").setAttribute("aria-label", tr("listen")); updateDice();
+}
+function radEn(r,n){ return RADCH[r] || RADEN[n] || n; }
+function info(w){
+  const cs = [...w.s];
+  const parts = cs.map(c=>{
+    const ci = CHARINFO[c]; if(!ci) return "";
+    const n = (lang==="en" ? radEn(ci[0],ci[1]) : ci[1]).toUpperCase();
+    return (cs.length>1 ? hans(c)+": " : "") + hans(ci[0]) + " (" + n + ")";
+  }).filter(Boolean);
+  return `${tr("radical")}: ${parts.join(" · ")}`;
+}
+function title(w){ return `${hans(w.s)} <span class="py">${w.py}</span>`; }
+function hans(c){ return `<span class="hans" lang="zh-Hans">${c}</span>`; }
+function han(c){ return `<span class="han" lang="zh-Hans">${c}</span>`; }
+
+/* ---------- Tải font (tập con) ---------- */
+(function(){
+  const l = document.createElement("link"); l.rel="stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@500&text=" + encodeURIComponent(SCHARS);
+  document.head.appendChild(l);
+})();
+(function loadFont(){
+  const l = document.createElement("link");
+  l.rel = "stylesheet";
+  l.href = "https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400&text=" + encodeURIComponent(CHARS);
+  document.head.appendChild(l);
+  const fontP = Promise.race([
+    new Promise(res => { l.onload = () => document.fonts.load('400 100px "LXGW WenKai TC"', CHARS).then(res, res); l.onerror = res; }),
+    new Promise(res => setTimeout(res, 4000))
+  ]);
+  $("card").classList.add("loading");
+  fontP.then(() => { buildTemplates(); ready = true; $("card").classList.remove("loading"); nextWord(); loadStrokeData(); });
+})();
+
+/* ---------- Mẫu chữ & khoảng cách ---------- */
+function distTransform(mask){
+  const d = new Float32Array(G*G);
+  for(let i=0;i<G*G;i++) d[i] = mask[i] ? 0 : 1e3;
+  const at = (x,y)=> (x<0||y<0||x>=G||y>=G) ? 1e3 : d[y*G+x];
+  for(let y=0;y<G;y++) for(let x=0;x<G;x++){
+    const i=y*G+x; let v=d[i];
+    v=Math.min(v, at(x-1,y)+1, at(x,y-1)+1, at(x-1,y-1)+1.414, at(x+1,y-1)+1.414); d[i]=v;
+  }
+  for(let y=G-1;y>=0;y--) for(let x=G-1;x>=0;x--){
+    const i=y*G+x; let v=d[i];
+    v=Math.min(v, at(x+1,y)+1, at(x,y+1)+1, at(x+1,y+1)+1.414, at(x-1,y+1)+1.414); d[i]=v;
+  }
+  return d;
+}
+function maskPoints(mask){ const p=[]; for(let i=0;i<G*G;i++) if(mask[i]) p.push(i%G, (i/G)|0); return p; }
+
+// Dữ liệu nét chữ (kiểu chữ của Hanzi Writer / Make Me a Hanzi), tải từ CDN; nếu không tải được thì dùng phông chữ
+const STROKES = {}, RADS = {};
+const DATA_URLS = ["https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/", "https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.0/"];
+async function fetchChar(ch){
+  if(window.HanziWriter && HanziWriter.loadCharacterData){
+    try{ const d = await HanziWriter.loadCharacterData(ch); if(d && Array.isArray(d.strokes) && d.strokes.length) return d; }catch(e){}
+  }
+  for(const base of DATA_URLS){
+    try{
+      const r = await fetch(base + encodeURIComponent(ch) + ".json");
+      if(!r.ok) continue;
+      const d = await r.json();
+      if(d && Array.isArray(d.strokes) && d.strokes.length) return d;
+    }catch(e){}
+  }
+  return null;
+}
+let bigC, bigX, smallC, smallX;
+function makeTemplate(ch){
+  if(!bigC){
+    bigC = document.createElement("canvas"); bigC.width = bigC.height = 200; bigC.lang = "zh-Hans";
+    bigX = bigC.getContext("2d", {willReadFrequently:true});
+    smallC = document.createElement("canvas"); smallC.width = smallC.height = G;
+    smallX = smallC.getContext("2d", {willReadFrequently:true});
+  }
+  const bc = bigX, sc = smallX;
+  bc.setTransform(1,0,0,1,0,0); bc.clearRect(0,0,200,200);
+  bc.fillStyle="#000";
+  if(STROKES[ch]){
+    const k = 200/1024;
+    bc.setTransform(k,0,0,-k,0,900*k);
+    STROKES[ch].forEach(d=>bc.fill(new Path2D(d)));
+    bc.setTransform(1,0,0,1,0,0);
+  } else {
+    bc.strokeStyle="#000"; bc.lineWidth=6; bc.lineJoin="round";
+    bc.font = `400 160px ${FONT}`; bc.textAlign="center"; bc.textBaseline="middle";
+    bc.strokeText(ch,100,104); bc.fillText(ch,100,104);
+  }
+  const d = bc.getImageData(0,0,200,200).data;
+  let x0=200,y0=200,x1=-1,y1=-1;
+  for(let y=0;y<200;y++) for(let x=0;x<200;x++) if(d[(y*200+x)*4+3]>128){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  sc.clearRect(0,0,G,G);
+  if(x1>=0){
+    const bw=x1-x0+1, bh=y1-y0+1, s=FIT/Math.max(bw,bh);
+    sc.drawImage(bigC, x0,y0,bw,bh, (G-bw*s)/2,(G-bh*s)/2, bw*s,bh*s);
+  }
+  const id = sc.getImageData(0,0,G,G).data, mask = new Uint8Array(G*G);
+  for(let i=0;i<G*G;i++) mask[i] = id[i*4+3]>110 ? 1 : 0;
+  return {ch:ch, pts:maskPoints(mask), dt:distTransform(mask)};
+}
+const TPL = {};
+function buildTemplates(){ CHARSET.forEach(c=>{ TPL[c] = makeTemplate(c); }); }
+let refs = [];
+let curN = 1;
+function boxS(){ return Math.max(30, Math.floor(Math.min(pad.clientWidth, pad.clientHeight) / curN)); }
+function refPad(){ return Math.round(boxS()*0.1); }
+// Căn chữ vào chính giữa mỗi ô: đo khung bao thật của các nét rồi dịch cả khối chữ
+function centerRef(i){
+  const o = refs[i]; if(!o || !o.center) return;
+  const k = (boxS() - 2*refPad())/1024;
+  const dx = (512 - o.center.cx)*k, dy = (o.center.cy - 388)*k;
+  o.box.style.transform = "translate(" + dx.toFixed(2) + "px," + dy.toFixed(2) + "px)";
+}
+function measureCenter(data){
+  try{
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns,"svg");
+    svg.setAttribute("width","10"); svg.setAttribute("height","10");
+    svg.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden";
+    const g = document.createElementNS(ns,"g");
+    data.strokes.forEach(d=>{ const p = document.createElementNS(ns,"path"); p.setAttribute("d", d); g.appendChild(p); });
+    svg.appendChild(g); document.body.appendChild(svg);
+    const b = g.getBBox(); document.body.removeChild(svg);
+    if(b.width>0 && b.height>0) return {cx:b.x+b.width/2, cy:b.y+b.height/2};
+  }catch(e){}
+  return null;
+}
+function setRef(){
+  const w = WORDS[idx], r = $("ref"); curN = [...w.s].length; const S = boxS();
+  r.innerHTML = ""; refs = [];
+  [...w.s].forEach((ch,i)=>{
+    const box = document.createElement("div");
+    box.style.cssText = "width:"+S+"px;height:"+S+"px;flex:none;display:flex;align-items:center;justify-content:center;line-height:1;font-size:"+Math.round(S*0.72)+"px";
+    r.appendChild(box);
+    const o = {box:box, writer:null, center:null}; refs.push(o);
+    const fallback = ()=>{ box.innerHTML = ""; box.style.transform = ""; box.textContent = ch; o.writer = null; o.center = null; };
+    if(!window.HanziWriter){ fallback(); return; }
+    try{
+      o.writer = HanziWriter.create(box, ch, {
+        width: S, height: S, padding: refPad(),
+        showOutline: false, showCharacter: true,
+        strokeColor: "#b8322a",
+        onLoadCharDataSuccess: d=>{ o.center = measureCenter(d); centerRef(i); },
+        onLoadCharDataError: fallback
+      });
+    }catch(e){ fallback(); }
+  });
+}
+function resizeRefs(){
+  const S = boxS();
+  refs.forEach((o,i)=>{
+    o.box.style.width = S+"px"; o.box.style.height = S+"px";
+    if(o.writer){ try{ o.writer.updateDimensions({width:S, height:S, padding:refPad()}); centerRef(i); }catch(e){} }
+    else o.box.style.fontSize = Math.round(S*0.72)+"px";
+  });
+}
+function loadStrokeData(){
+  CHARSET.forEach(ch=>{
+    fetchChar(ch).then(d=>{
+      if(!d) return;
+      STROKES[ch] = d.strokes; RADS[ch] = d.radStrokes || [];
+      TPL[ch] = makeTemplate(ch);
+    });
+  });
+}
+
+/* ---------- Nhận diện ---------- */
+function userMask(list){
+  let x0=1,y0=1,x1=0,y1=0;
+  list.forEach(s=>s.forEach(p=>{ x0=Math.min(x0,p.x); x1=Math.max(x1,p.x); y0=Math.min(y0,p.y); y1=Math.max(y1,p.y); }));
+  const dim = Math.max(x1-x0, y1-y0);
+  if(dim < 0.14) return null;
+  const s = FIT/dim, c = document.createElement("canvas"); c.width=c.height=G;
+  const k = c.getContext("2d", {willReadFrequently:true});
+  const ox = G/2 - (x0+x1)/2*s, oy = G/2 - (y0+y1)/2*s;
+  k.strokeStyle="#000"; k.fillStyle="#000"; k.lineWidth=1.6; k.lineCap="round"; k.lineJoin="round";
+  list.forEach(st=>{
+    k.beginPath();
+    st.forEach((p,i)=>{ const X=p.x*s+ox, Y=p.y*s+oy; i?k.lineTo(X,Y):k.moveTo(X,Y); });
+    if(st.length===1){ k.lineTo(st[0].x*s+ox+.1, st[0].y*s+oy); }
+    k.stroke();
+  });
+  const d = k.getImageData(0,0,G,G).data, mask=new Uint8Array(G*G);
+  for(let i=0;i<G*G;i++) mask[i] = d[i*4+3]>60 ? 1:0;
+  return mask;
+}
+function scoreAgainst(uPts, uDT, t){
+  let best = 0;
+  const n = uPts.length/2, m = t.pts.length/2;
+  if(!n||!m) return 0;
+  for(let dy=-4;dy<=4;dy++) for(let dx=-4;dx<=4;dx++){
+    let a=0;
+    for(let i=0;i<uPts.length;i+=2){
+      const x=uPts[i]+dx, y=uPts[i+1]+dy;
+      if(x>=0&&y>=0&&x<G&&y<G && t.dt[y*G+x]<=3.2) a++;
+    }
+    let b=0;
+    for(let i=0;i<t.pts.length;i+=2){
+      const x=t.pts[i]-dx, y=t.pts[i+1]-dy;
+      if(x>=0&&y>=0&&x<G&&y<G && uDT[y*G+x]<=5) b++;
+    }
+    const prec=a/n, cov=b/m, f = (prec+cov) ? 2*prec*cov/(prec+cov) : 0;
+    if(f>best) best=f;
+  }
+  return best;
+}
+function levelChars(){ const set = new Set(); pool().forEach(i=>[...WORDS[i].s].forEach(c=>set.add(c))); return [...set]; }
+function strokeCell(st, n){ let m = 0; st.forEach(p=>{ m += p.x; }); m /= st.length; return Math.min(n-1, Math.max(0, Math.floor(m*n))); }
+function recognize(){
+  if(!ready || !strokes.length || solved) return;
+  const w = WORDS[idx], chars = [...w.s], n = chars.length;
+  const groups = chars.map(()=>[]);
+  strokes.forEach(st=>groups[strokeCell(st,n)].push(st));
+  if(groups.some(g=>!g.length)){ setStatus("near", tr("more"), ""); return; }
+  const cand = levelChars(), results = [];
+  for(let i=0;i<n;i++){
+    const mask = userMask(groups[i]);
+    if(!mask){ setStatus("bad", tr("small1"), tr("small2")); return; }
+    const uPts = maskPoints(mask), uDT = distTransform(mask);
+    const res = cand.map(c=>({ch:c, s:scoreAgainst(uPts,uDT,TPL[c])})).sort((a,b)=>b.s-a.s);
+    const rank = res.findIndex(r=>r.ch===chars[i]);
+    results.push({rank:rank, ts:res[rank].s, top:res[0].ch});
+  }
+  const k = results.findIndex(r=>!(r.rank===0 && r.ts>=0.55));
+  if(k<0){
+    solved = true; if(!revealedThisWord){ stats.sc++; stats.tot++; stats.stk++; } updateStats();
+    setStatus("ok", tr("ok")+" "+title(w), info(w));
+    updateDice(); speak(w.s, true);
+  } else {
+    const r = results[k];
+    if(r.rank<=2 && r.ts>=0.38) setStatus("near", tr("near1"), n>1 ? tr("cellnear").replace("{k}",k+1) : tr("near2"));
+    else setStatus("bad", tr("bad1"), (n>1 ? tr("cellbad").replace("{k}",k+1) : tr("bad2a")) + han(r.top) + tr("bad2b"));
+  }
+}
+function hans(c){ return `<span class="hans" lang="zh-Hans">${c}</span>`; }
+function han(c){ return `<span class="han" lang="zh-Hans">${c}</span>`; }
+function setStatus(cls,t,d,extra){
+  $("status").className="status "+cls;
+  $("status").innerHTML=`<div class="t">${t}</div><div class="d">${d}</div>${extra||""}`;
+}
+function updateStats(){}
+
+/* ---------- Bút lông ---------- */
+const WMAX = 0.042;
+function resize(){
+  const r = pad.getBoundingClientRect(); dpr = window.devicePixelRatio||1; W = r.height;
+  cv.width = Math.round(r.width*dpr); cv.height = Math.round(r.height*dpr);
+  resizeRefs(); redraw();
+}
+function stamp(a,b){
+  const ax=a.x*W, ay=a.y*W, bx=b.x*W, by=b.y*W, d=Math.hypot(bx-ax,by-ay);
+  const n = Math.max(1, Math.ceil(d/1.2));
+  for(let i=0;i<=n;i++){
+    const t=i/n, x=ax+(bx-ax)*t, y=ay+(by-ay)*t, r=(a.w+(b.w-a.w)*t)*W/2;
+    ctx.beginPath(); ctx.arc(x,y,Math.max(r,.6),0,Math.PI*2); ctx.fill();
+  }
+}
+function redraw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cv.width/dpr+2,W+2);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#16130f";
+  strokes.forEach(s=>{ if(s.length===1) stamp(s[0],s[0]); for(let i=1;i<s.length;i++) stamp(s[i-1],s[i]); });
+}
+function pos(e){ const r=pad.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.height, y:(e.clientY-r.top)/r.height, t:e.timeStamp, pr:e.pressure}; }
+
+cv.addEventListener("pointerdown", e=>{
+  if(!ready) return;
+  e.preventDefault(); cv.setPointerCapture(e.pointerId);
+  clearTimeout(timer);
+  const p = pos(e);
+  cur = [{x:p.x,y:p.y,w:WMAX*.55}]; cur._last = p; strokes.push(cur);
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle="#16130f";
+  stamp(cur[0],cur[0]);
+});
+cv.addEventListener("pointermove", e=>{
+  if(!cur) return; e.preventDefault();
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  (evs.length?evs:[e]).forEach(ev=>{
+    const raw = pos(ev), prev = cur[cur.length-1], last = cur._last;
+    const x = prev.x+(raw.x-prev.x)*.55, y = prev.y+(raw.y-prev.y)*.55;
+    const dist = Math.hypot(x-prev.x,y-prev.y)*W; if(dist<1.2) return;
+    const dt = Math.max(1, raw.t-last.t), v = dist/dt;
+    let target = WMAX*(1-.62*Math.min(1,v/2.6));
+    if(ev.pointerType==="pen" && raw.pr>0) target = WMAX*(.35+.65*raw.pr);
+    const w = prev.w*.7 + target*.3;
+    const np = {x,y,w}; cur.push(np); cur._last = raw;
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.fillStyle="#16130f"; stamp(prev,np);
+  });
+});
+function endStroke(e){
+  if(!cur) return; cur=null;
+  clearTimeout(timer); timer = setTimeout(recognize, 1100);
+}
+cv.addEventListener("pointerup", endStroke);
+cv.addEventListener("pointercancel", endStroke);
+
+/* ---------- Điều khiển ---------- */
+function pool(){ const r=[]; WORDS.forEach((w,i)=>{ if(w.lv===level) r.push(i); }); return r; }
+function clearPad(){ strokes=[]; cur=null; redraw(); }
+$("undo").onclick = ()=>{ strokes.pop(); redraw(); clearTimeout(timer); if(strokes.length) timer=setTimeout(recognize,1100); };
+$("clear").onclick = ()=>{ clearPad(); clearTimeout(timer); if(!solved) setStatus("","",tr("cleared")); };
+$("reveal").onclick = ()=>{
+  const r = $("ref");
+  if(r.classList.contains("reveal")){
+    r.className = "ref";
+    if(!solved) setStatus("","","");
+    return;
+  }
+  const w = WORDS[idx]; r.className = "ref reveal";
+  if(!solved && !revealedThisWord){ stats.tot++; stats.stk=0; updateStats(); }
+  revealedThisWord = true;
+  setStatus("near", title(w), info(w));
+};
+function syncOpts(){ $("lv").value = String(level); $("lg").value = lang; }
+$("speak").onclick = ()=>{ if(idx!==null) speak(WORDS[idx].s); };
+$("dice").onclick = ()=>{ if(ready) nextWord(); };
+$("lv").addEventListener("change", ()=>{
+  level=+$("lv").value; savePrefs(); deck=[]; idx=null; if(ready) nextWord();
+});
+$("lg").addEventListener("change", ()=>{
+  lang=$("lg").value; savePrefs(); applyLang(); if(!solved) setStatus("","",""); showPrompt();
+});
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } return a; }
+let firstLoad = true;
+function forcedIdx(){
+  let c = ""; try{ c = new URLSearchParams(location.search).get("w") || decodeURIComponent(location.hash.slice(1)); }catch(e){}
+  return c ? WORDS.findIndex(w=>w.t===c || w.s===c) : -1;
+}
+function nextWord(){
+  let fi = -1;
+  if(firstLoad){ firstLoad = false; fi = forcedIdx(); if(fi>=0){ level = WORDS[fi].lv; syncOpts(); deck = []; } }
+  if(fi<0 && !deck.length){ deck = shuffle(pool().filter(i=>i!==idx)); if(!deck.length) deck = pool(); }
+  idx = fi>=0 ? fi : deck.pop(); solved=false; revealedThisWord=false; clearTimeout(timer); clearTimeout(autoTimer); updateDice();
+  curN = [...WORDS[idx].s].length;
+  clearPad();
+  const rf = $("ref");
+  rf.style.transition = "none"; rf.className = "ref"; void rf.offsetWidth;   // ẩn ngay lập tức, không mờ dần
+  setRef();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ rf.style.transition = ""; }));
+  setStatus("","","");
+  showPrompt();
+}
+function showPrompt(){
+  if(idx===null) return; const w = WORDS[idx];
+  $("emoji").textContent = w.em;
+  $("word").textContent  = lang==="en" ? w.en : w.vi;
+  $("sub").textContent   = "";
+}
+window.addEventListener("resize", resize);
+syncOpts(); applyLang(); resize(); updateStats();
+</script>
+</body>
+</html>
