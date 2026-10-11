@@ -1,5 +1,5 @@
 [README.md](https://github.com/user-attachments/files/33295710/README.md)
-# Luyện viết Hán tự bằng bút lông
+# Luyện viết Hán
 
 Trang web một file (`index.html`) giúp luyện viết chữ Hán theo cấp HSK 1–6. Chạy hoàn toàn trên trình duyệt, không cần máy chủ.
 
