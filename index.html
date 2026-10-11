@@ -66,13 +66,52 @@ h1 span{color:var(--accent)}
 .han{font-family:"LXGW WenKai TC","Kaiti SC","KaiTi","STKaiti","Noto Sans SC",serif;font-weight:400}
 .note{font-size:12px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.5}
 .loading{opacity:.5;pointer-events:none}
+
+/* ===== Bố cục vừa khít màn hình (không cần cuộn) ===== */
+html,body{height:100%}
+body{min-height:100vh;min-height:100dvh;height:auto;padding:8px 10px;display:flex}
+.app{width:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column;min-height:calc(100vh - 16px);min-height:calc(100dvh - 16px)}
+header{margin-bottom:6px}
+h1{font-size:16px}
+.card{flex:1;display:flex;flex-direction:column;min-height:0;padding:10px 12px;border-radius:14px}
+.opts{gap:8px;margin-bottom:6px}
+.opt span{display:none}
+.opt select{padding:7px 10px;font-size:14px;border-radius:10px}
+.prompt{display:flex;align-items:center;justify-content:center;gap:10px;padding:0 0 6px;flex-wrap:wrap}
+.emoji{font-size:38px;line-height:1}
+.word{font-size:22px;margin:0}
+.padwrap{flex:1 1 0;min-height:150px;display:flex;align-items:center;justify-content:center;container-type:size}
+.pad{width:min(100cqw,100cqh);height:min(100cqw,100cqh);max-width:none;aspect-ratio:auto;margin:0}
+@supports not (width:1cqw){
+  .padwrap{container-type:normal;flex:none;display:block}
+  .pad{width:100%;height:auto;aspect-ratio:1/1;max-width:420px;margin:0 auto}
+}
+.status{margin:6px 0 2px;min-height:42px}
+.status .t{font-size:15px}
+.status .d{font-size:12px;margin-top:2px}
+.btns{gap:6px;margin-top:4px}
+.btns button{padding:9px 4px;font-size:13px;line-height:1.2;border-radius:10px}
+.btns #dice{font-size:14px;padding:10px}
+
+/* ===== Căn cân đối: từ gợi ý + bảng viết nằm giữa vùng còn trống ===== */
+.stage{flex:1 1 0;min-height:200px;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;container-type:size}
+.stage .prompt{flex:none;height:52px;width:100%;padding:0;flex-wrap:nowrap}
+.stage .word{max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.padwrap{flex:none;min-height:0;display:block;container-type:normal;width:auto}
+.pad{width:min(100cqw,calc(100cqh - 64px));height:min(100cqw,calc(100cqh - 64px))}
+@supports not (width:1cqw){
+  .stage{container-type:normal;flex:none;display:block}
+  .stage .prompt{margin-bottom:8px}
+  .padwrap{display:block}
+  .pad{width:100%;height:auto;aspect-ratio:1/1;max-width:420px;margin:0 auto}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7.2/dist/hanzi-writer.min.js"></script>
 </head>
 <body>
 <div class="app">
   <header>
-    <h1 id="ttl">🖌️ Luyện viết <span>Hán tự</span></h1>
+    <h1 id="ttl">🖌️ Viết <span>Hán tự</span></h1>
   </header>
 
   <div class="card" id="card">
@@ -90,12 +129,14 @@ h1 span{color:var(--accent)}
       </label>
     </div>
 
+    <div class="stage">
     <div class="prompt">
       <div class="emoji" id="emoji"></div>
       <div class="word" id="word"></div>
       <div class="sub" id="sub"></div>
     </div>
 
+    <div class="padwrap">
     <div class="pad" id="pad">
       <svg id="guide" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <g stroke="var(--guide)" stroke-width=".5" stroke-dasharray="2 2" fill="none">
@@ -106,6 +147,8 @@ h1 span{color:var(--accent)}
       <div class="ref" id="ref" lang="zh-Hans"></div>
       <canvas id="cv"></canvas>
       <button class="speak" id="speak" type="button" aria-label="Nghe phát âm">🔊</button>
+    </div>
+    </div>
     </div>
 
     <div class="status" id="status"></div>
@@ -380,12 +423,12 @@ function savePrefs(){ try{ localStorage.setItem("hz-prefs", JSON.stringify({leve
 
 /* ---------- Ngôn ngữ giao diện ---------- */
 const UI = {
- vi:{title:'🖌️ Luyện viết <span>Hán tự</span>', doc:'Luyện viết Hán tự bằng bút lông', level:'Trình độ', language:'Ngôn ngữ',
+ vi:{title:'🖌️ Viết <span>Hán tự</span>', doc:'Luyện viết Hán tự bằng bút lông', level:'Trình độ', language:'Ngôn ngữ',
      undo:'↶ Hoàn tác nét', clear:'🗑 Xóa hết', reveal:'👁 Xem đáp án', dice:'🎲 Từ khác', next:'Từ tiếp theo →', listen:'Nghe', twochars:'Viết 2 chữ: chữ 1 bên trái, chữ 2 bên phải', more:'Viết tiếp chữ còn lại nhé.', cellnear:'Chữ thứ {k} gần đúng, kiểm tra lại số nét và vị trí các nét.', cellbad:'Chữ thứ {k} chưa đúng. Máy nhận ra giống: ', nospeech1:'Không phát được âm thanh', nospeech2:'Thiết bị hoặc trình duyệt chưa có giọng đọc tiếng Trung.', radical:'Bộ thủ', cleared:'Đã xóa. Hãy viết lại nhé.',
      small1:'Chữ hơi nhỏ', small2:'Hãy viết to hơn, gần đầy ô nhé.', ok:'✅ Chính xác!', near1:'🔶 Gần đúng rồi!',
      near2:'Kiểm tra lại số nét và vị trí các nét, rồi viết lại.', bad1:'❌ Chưa đúng',
      bad2a:'Máy đang nhận ra giống: ', bad2b:'. Thử viết lại hoặc bấm “Xem đáp án”.'},
- en:{title:'🖌️ Practice writing <span>Hanzi</span>', doc:'Practice writing Chinese characters with a brush', level:'Level', language:'Language',
+ en:{title:'🖌️ <span>Hanzi</span> writing', doc:'Practice writing Chinese characters with a brush', level:'Level', language:'Language',
      undo:'↶ Undo stroke', clear:'🗑 Clear', reveal:'👁 Show answer', dice:'🎲 Another word', next:'Next word →', listen:'Listen', twochars:'Write 2 characters: first on the left, second on the right', more:'Now write the other character.', cellnear:'Character {k} is close — check its strokes again.', cellbad:'Character {k} is not right. It looks most like: ', nospeech1:"Can't play audio", nospeech2:'Your device or browser has no Chinese voice installed.', radical:'Radical', cleared:'Cleared. Try again.',
      small1:'Writing is too small', small2:'Please write bigger, almost filling the box.', ok:'✅ Correct!', near1:'🔶 Almost there!',
      near2:'Check the number of strokes and where each stroke goes, then try again.', bad1:'❌ Not quite',
@@ -419,6 +462,7 @@ function applyLang(){
   document.title = tr("doc");
   $("ttl").innerHTML = tr("title");
   $("lvLabel").textContent = tr("level"); $("lgLabel").textContent = tr("language");
+  $("lv").setAttribute("aria-label", tr("level")); $("lg").setAttribute("aria-label", tr("language"));
   $("undo").textContent = tr("undo"); $("clear").textContent = tr("clear"); $("reveal").textContent = tr("reveal"); $("speak").setAttribute("aria-label", tr("listen")); updateDice();
 }
 function radEn(r,n){ return RADCH[r] || RADEN[n] || n; }
@@ -472,7 +516,7 @@ function distTransform(mask){
 function maskPoints(mask){ const p=[]; for(let i=0;i<G*G;i++) if(mask[i]) p.push(i%G, (i/G)|0); return p; }
 
 // Dữ liệu nét chữ (kiểu chữ của Hanzi Writer / Make Me a Hanzi), tải từ CDN; nếu không tải được thì dùng phông chữ
-const STROKES = {}, RADS = {};
+const STROKES = {}, RADS = {}, MEDIANS = {};
 const DATA_URLS = ["https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1/", "https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.0/"];
 async function fetchChar(ch){
   if(window.HanziWriter && HanziWriter.loadCharacterData){
@@ -519,7 +563,52 @@ function makeTemplate(ch){
   }
   const id = sc.getImageData(0,0,G,G).data, mask = new Uint8Array(G*G);
   for(let i=0;i<G*G;i++) mask[i] = id[i*4+3]>110 ? 1 : 0;
-  return {ch:ch, pts:maskPoints(mask), dt:distTransform(mask)};
+  return {ch:ch, pts:maskPoints(mask), dt:distTransform(mask), thin:buildThin(ch)};
+}
+// Mẫu mảnh: dùng đường trung tâm (medians) của từng nét trong dữ liệu Hanzi Writer
+function buildThin(ch){
+  const med = MEDIANS[ch]; if(!med || !med.length) return null;
+  const k = 200/1024;
+  const poly = med.map(m=>m.map(p=>[p[0]*k, (900-p[1])*k]));
+  let x0=1e9, y0=1e9, x1=-1e9, y1=-1e9;
+  poly.forEach(m=>m.forEach(p=>{ x0=Math.min(x0,p[0]); x1=Math.max(x1,p[0]); y0=Math.min(y0,p[1]); y1=Math.max(y1,p[1]); }));
+  const s = FIT/Math.max(x1-x0, y1-y0, 1), cx=(x0+x1)/2, cy=(y0+y1)/2;
+  const mask = new Uint8Array(G*G), strokes = [];
+  poly.forEach(m=>{
+    const sp = [];
+    for(let i=0;i<m.length;i++){
+      const a=m[i], b=m[i+1]||m[i];
+      const ax=(a[0]-cx)*s+G/2, ay=(a[1]-cy)*s+G/2, bx=(b[0]-cx)*s+G/2, by=(b[1]-cy)*s+G/2;
+      const steps = Math.max(1, Math.ceil(Math.hypot(bx-ax,by-ay)/0.7));
+      for(let t=0;t<=steps;t++){
+        const x = Math.round(ax+(bx-ax)*t/steps), y = Math.round(ay+(by-ay)*t/steps);
+        if(x>=0 && y>=0 && x<G && y<G){ mask[y*G+x] = 1; sp.push(x,y); }
+      }
+    }
+    strokes.push(sp);
+  });
+  return {n: med.length, pts: maskPoints(mask), dt: distTransform(mask), strokes: strokes};
+}
+const TOL = 5;
+function scoreThin(uPts, uDT, T){
+  const n = uPts.length/2, m = T.pts.length/2;
+  if(!n || !m) return {f:0, prec:0, cov:0, miss:T.n};
+  let best = null;
+  for(let dy=-3; dy<=3; dy++) for(let dx=-3; dx<=3; dx++){
+    let a=0, b=0;
+    for(let i=0;i<uPts.length;i+=2){ const x=uPts[i]+dx, y=uPts[i+1]+dy; if(x>=0&&y>=0&&x<G&&y<G && T.dt[y*G+x]<=TOL) a++; }
+    for(let i=0;i<T.pts.length;i+=2){ const x=T.pts[i]-dx, y=T.pts[i+1]-dy; if(x>=0&&y>=0&&x<G&&y<G && uDT[y*G+x]<=TOL) b++; }
+    const prec=a/n, cov=b/m, f = (prec+cov) ? 2*prec*cov/(prec+cov) : 0;
+    if(!best || f>best.f) best = {f:f, prec:prec, cov:cov, dx:dx, dy:dy};
+  }
+  let miss = 0;
+  T.strokes.forEach(sp=>{
+    const tot = sp.length/2; let c = 0;
+    for(let i=0;i<sp.length;i+=2){ const x=sp[i]-best.dx, y=sp[i+1]-best.dy; if(x>=0&&y>=0&&x<G&&y<G && uDT[y*G+x]<=TOL+1) c++; }
+    if(tot && c/tot < 0.6) miss++;
+  });
+  best.miss = miss;
+  return best;
 }
 const TPL = {};
 function buildTemplates(){ CHARSET.forEach(c=>{ TPL[c] = makeTemplate(c); }); }
@@ -581,7 +670,7 @@ function loadStrokeData(){
   CHARSET.forEach(ch=>{
     fetchChar(ch).then(d=>{
       if(!d) return;
-      STROKES[ch] = d.strokes; RADS[ch] = d.radStrokes || [];
+      STROKES[ch] = d.strokes; RADS[ch] = d.radStrokes || []; MEDIANS[ch] = d.medians || null;
       TPL[ch] = makeTemplate(ch);
     });
   });
@@ -636,22 +725,36 @@ function recognize(){
   strokes.forEach(st=>groups[strokeCell(st,n)].push(st));
   if(groups.some(g=>!g.length)){ setStatus("near", tr("more"), ""); return; }
   const cand = levelChars(), results = [];
+  const useThin = cand.every(c=>TPL[c] && TPL[c].thin);   // đủ dữ liệu nét thật → chấm theo từng nét
   for(let i=0;i<n;i++){
     const mask = userMask(groups[i]);
     if(!mask){ setStatus("bad", tr("small1"), tr("small2")); return; }
     const uPts = maskPoints(mask), uDT = distTransform(mask);
-    const res = cand.map(c=>({ch:c, s:scoreAgainst(uPts,uDT,TPL[c])})).sort((a,b)=>b.s-a.s);
-    const rank = res.findIndex(r=>r.ch===chars[i]);
-    results.push({rank:rank, ts:res[rank].s, top:res[0].ch});
+    const res = cand.map(c=> useThin
+        ? Object.assign({ch:c}, scoreThin(uPts, uDT, TPL[c].thin))
+        : {ch:c, f:scoreAgainst(uPts,uDT,TPL[c]), prec:1, cov:1, miss:0}
+      ).sort((a,b)=>b.f-a.f);
+    const rank = res.findIndex(r=>r.ch===chars[i]), r = res[rank];
+    let ok, near;
+    if(useThin){
+      const nt = TPL[chars[i]].thin.n, nu = groups[i].length;
+      const allowMiss = Math.floor(nt/7), maxDiff = nt<=3 ? 1 : (nt<=8 ? 2 : 3);
+      ok   = rank===0 && r.f>=0.58 && r.prec>=0.58 && r.miss<=allowMiss && Math.abs(nu-nt)<=maxDiff;
+      near = rank<=2 && r.f>=0.45;
+    } else {
+      ok   = rank===0 && r.f>=0.55;
+      near = rank<=2 && r.f>=0.38;
+    }
+    results.push({ok:ok, near:near, top:res[0].ch});
   }
-  const k = results.findIndex(r=>!(r.rank===0 && r.ts>=0.55));
+  const k = results.findIndex(r=>!r.ok);
   if(k<0){
     solved = true; if(!revealedThisWord){ stats.sc++; stats.tot++; stats.stk++; } updateStats();
     setStatus("ok", tr("ok")+" "+title(w), info(w));
     updateDice(); speak(w.s, true);
   } else {
     const r = results[k];
-    if(r.rank<=2 && r.ts>=0.38) setStatus("near", tr("near1"), n>1 ? tr("cellnear").replace("{k}",k+1) : tr("near2"));
+    if(r.near) setStatus("near", tr("near1"), n>1 ? tr("cellnear").replace("{k}",k+1) : tr("near2"));
     else setStatus("bad", tr("bad1"), (n>1 ? tr("cellbad").replace("{k}",k+1) : tr("bad2a")) + han(r.top) + tr("bad2b"));
   }
 }
@@ -664,7 +767,7 @@ function setStatus(cls,t,d,extra){
 function updateStats(){}
 
 /* ---------- Bút lông ---------- */
-const WMAX = 0.042;
+const WMAX = 0.0315;   // độ dày bút lông tối đa (75% của giá trị cũ 0.042)
 function resize(){
   const r = pad.getBoundingClientRect(); dpr = window.devicePixelRatio||1; W = r.height;
   cv.width = Math.round(r.width*dpr); cv.height = Math.round(r.height*dpr);
@@ -771,6 +874,7 @@ function showPrompt(){
   $("sub").textContent   = "";
 }
 window.addEventListener("resize", resize);
+if(window.ResizeObserver){ new ResizeObserver(()=>resize()).observe($("pad")); }
 syncOpts(); applyLang(); resize(); updateStats();
 </script>
 </body>
